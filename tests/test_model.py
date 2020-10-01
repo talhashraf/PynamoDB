@@ -2422,82 +2422,39 @@ class ModelTestCase(TestCase):
         with self.assertRaises(AttributeError):
             OldStyleModel.exists()
 
-    def test_dumps(self):
+    def test_to_json(self):
         """
-        Model.dumps
+        Model.to_json
         """
-        with patch(PATCH_METHOD) as req:
-            items = []
-            for idx in range(10):
-                item = copy.copy(GET_MODEL_ITEM_DATA.get(ITEM))
-                item['user_id'] = {STRING: 'id-{}'.format(idx)}
-                item['email'] = {STRING: 'email-{}'.format(random.randint(0, 65536))}
-                item['picture'] = {BINARY: BINARY_ATTR_DATA}
-                items.append(item)
-            req.return_value = {'Count': len(items), 'ScannedCount': len(items), 'Items': items}
-            content = UserModel.dumps()
-            serialized_items = json.loads(content)
-            for original, new_item in zip(items, serialized_items):
-                self.assertEqual(new_item[0], original['user_name'][STRING])
-                self.assertEqual(new_item[1][snake_to_camel_case(ATTRIBUTES)]['zip_code']['N'], original['zip_code']['N'])
-                self.assertEqual(new_item[1][snake_to_camel_case(ATTRIBUTES)]['email']['S'], original['email']['S'])
-                self.assertEqual(new_item[1][snake_to_camel_case(ATTRIBUTES)]['picture']['B'], original['picture']['B'])
+        user = UserModel()
+        user.custom_user_name = 'foo'
+        user.user_id = 'bar'
+        user.picture = base64.b64decode(BINARY_ATTR_DATA)
+        user.zip_code = 88030
+        json_user = json.loads(user.to_json())
+        self.assertEqual(json_user['user_name'], user.custom_user_name)  # uses custom attribute name
+        self.assertEqual(json_user['user_id'], user.user_id)
+        self.assertEqual(json_user['picture'], BINARY_ATTR_DATA)
+        self.assertEqual(json_user['zip_code'], user.zip_code)
+        self.assertEqual(json_user['email'], 'needs_email')  # set to default value
 
-    def test_loads(self):
+    def test_from_json(self):
         """
-        Model.loads
+        Model.from_json
         """
-        with patch(PATCH_METHOD) as req:
-            req.return_value = {}
-            UserModel.loads(json.dumps(SERIALIZED_TABLE_DATA))
-
-        args = {
-            'UserModel': [
-                {
-                    'PutRequest': {
-                        'Item': {
-                            'user_id': {'S': u'id-0'},
-                            'callable_field': {'N': '42'},
-                            'user_name': {'S': u'foo'},
-                            'email': {'S': u'email-7980'},
-                            'picture': {
-                                "B": "aGVsbG8sIHdvcmxk"
-                            },
-                            'zip_code': {'N': '88030'}
-                        }
-                    }
-                },
-                {
-                    'PutRequest': {
-                        'Item': {
-                            'user_id': {'S': u'id-1'},
-                            'callable_field': {'N': '42'},
-                            'user_name': {'S': u'foo'},
-                            'email': {'S': u'email-19770'},
-                            'picture': {
-                                "B": "aGVsbG8sIHdvcmxk"
-                            },
-                            'zip_code': {'N': '88030'}
-                        }
-                    }
-                }
-            ]
+        json_user = {
+            'user_name': 'foo',
+            'user_id': 'bar',
+            'picture': BINARY_ATTR_DATA,
+            'zip_code': 88030,
         }
-        self.assert_dict_lists_equal(req.call_args[0][1]['RequestItems']['UserModel'], args['UserModel'])
-
-    def test_loads_complex_model(self):
-        with patch(PATCH_METHOD) as req:
-            req.return_value = {}
-            ComplexModel.loads(json.dumps(COMPLEX_MODEL_SERIALIZED_TABLE_DATA))
-
-        args = {
-            'ComplexModel': [
-                {
-                    'PutRequest': COMPLEX_MODEL_ITEM_DATA
-                }
-            ]
-        }
-        self.assert_dict_lists_equal(req.call_args[0][1]['RequestItems']['ComplexModel'], args['ComplexModel'])
+        user = UserModel()
+        user.from_json(json.dumps(json_user))
+        self.assertEqual(user.custom_user_name, json_user['user_name'])  # uses custom attribute name
+        self.assertEqual(user.user_id, json_user['user_id'])
+        self.assertEqual(user.picture, base64.b64decode(json_user['picture']))
+        self.assertEqual(user.zip_code, json_user['zip_code'])
+        self.assertEqual(user.email, 'needs_email')  # set to default value
 
     def _get_office_employee(self):
         justin = Person(
