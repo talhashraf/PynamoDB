@@ -1035,11 +1035,11 @@ class TestAttributeContainer:
         now_unix_ts = calendar.timegm(now.utctimetuple())
         test_model = AttributeTestModel()
         test_model.binary_attr = b'foo'
-        test_model.binary_set_attr = {b'bar', b'baz'}
+        test_model.binary_set_attr = {b'bar'}
         test_model.number_attr = 1
         test_model.number_set_attr = {0, 0.5, 1}
         test_model.unicode_attr = 'foo'
-        test_model.unicode_set_attr = {'foo', 'bar'}
+        test_model.unicode_set_attr = {'baz'}
         test_model.datetime_attr = now
         test_model.bool_attr = True
         test_model.json_attr = {'foo': 'bar'}
@@ -1049,7 +1049,7 @@ class TestAttributeContainer:
         assert test_model.to_json() == (
             '{'
             '"binary_attr": "Zm9v", '
-            '"binary_set_attr": ["YmFy", "YmF6"], '
+            '"binary_set_attr": ["YmFy"], '
             '"bool_attr": true, '
             '"datetime_attr": "' + now_formatted + '", '
             '"json_attr": "{\\"foo\\": \\"bar\\"}", '
@@ -1059,7 +1059,7 @@ class TestAttributeContainer:
             '"number_set_attr": [0, 0.5, 1], '
             '"ttl_attr": ' + str(now_unix_ts) + ', '
             '"unicode_attr": "foo", '
-            '"unicode_set_attr": ["bar", "foo"]'
+            '"unicode_set_attr": ["baz"]'
             '}')
 
     def test_from_json(self):
@@ -1069,7 +1069,7 @@ class TestAttributeContainer:
         json_string = (
             '{'
             '"binary_attr": "Zm9v", '
-            '"binary_set_attr": ["YmFy", "YmF6"], '
+            '"binary_set_attr": ["YmFy"], '
             '"bool_attr": true, '
             '"datetime_attr": "' + now_formatted + '", '
             '"json_attr": "{\\"foo\\": \\"bar\\"}", '
@@ -1079,16 +1079,16 @@ class TestAttributeContainer:
             '"number_set_attr": [0, 0.5, 1], '
             '"ttl_attr": ' + str(now_unix_ts) + ', '
             '"unicode_attr": "foo", '
-            '"unicode_set_attr": ["bar", "foo"]'
+            '"unicode_set_attr": ["baz"]'
             '}')
         test_model = AttributeTestModel()
         test_model.from_json(json_string)
         assert test_model.binary_attr == b'foo'
-        assert test_model.binary_set_attr == {b'bar', b'baz'}
+        assert test_model.binary_set_attr == {b'bar'}
         assert test_model.number_attr == 1
         assert test_model.number_set_attr == {0, 0.5, 1}
         assert test_model.unicode_attr == 'foo'
-        assert test_model.unicode_set_attr == {'foo', 'bar'}
+        assert test_model.unicode_set_attr == {'baz'}
         assert test_model.datetime_attr == now
         assert test_model.bool_attr is True
         assert test_model.json_attr == {'foo': 'bar'}
